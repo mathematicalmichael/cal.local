@@ -180,6 +180,16 @@ overkill for a one-person tool — that's the whole ask here.
   day/start/end/label). "+ Add block" copies the *previous* row's
   start/end/label and advances to the next day of week, rather than
   repeating a generic default — faster for entering a run of similar days.
+- `js/diff.js` — pure (DOM-free, like `time.js`) document comparison used by
+  the import flow. Businesses are matched by `id` first, then by
+  case-insensitive name, so a hand-rebuilt file reads as an edit rather than
+  a remove+add. `hours`/`exceptions` are diffed as multisets of their
+  human-readable form, not by id, for the same reason.
+- `js/import-modal.js` — the import confirmation modal (replaces the old
+  `confirm()` that only showed a business count). Reuses the
+  `.modal-backdrop`/`.modal` shell from `styles.css` and returns a promise
+  resolving true/false. Import still *replaces* the whole document — the
+  modal only explains what that would change; it isn't a merge tool.
 - `js/app.js` — composition root: wires storage, the three views, the
   legend, and the modal together; owns the single in-memory `state` object,
   `isBizVisible()` (the two-layer visibility check), and the `persist()`

@@ -863,6 +863,71 @@ button, input, select, textarea {
 }
 .modal__footer-spacer { flex: 1; }
 
+/* ---------- Import diff ---------- */
+
+.diff-summary { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.diff-chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--rule-strong);
+  color: var(--ink-soft);
+}
+.diff-chip--add { color: var(--good); border-color: var(--good); background: var(--good-bg); }
+.diff-chip--del { color: var(--accent); border-color: var(--accent); background: var(--bad-bg); }
+.diff-chip--mod { color: var(--ink); }
+
+.diff-section { display: flex; flex-direction: column; gap: 0.4rem; }
+.diff-section__title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+.diff-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+
+.diff-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--rule-strong);
+  background: var(--paper-dark);
+  font-size: 0.85rem;
+}
+.diff-item--add { border-left-color: var(--good); }
+.diff-item--del { border-left-color: var(--accent); }
+.diff-item--mod { border-left-color: var(--ink-soft); }
+.diff-item--block { display: block; }
+.diff-item__head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+
+.diff-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.diff-name { font-weight: 600; }
+.diff-meta { margin-left: auto; font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); }
+
+.diff-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.1rem 0;
+}
+.diff-field__name { color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+.diff-old { color: var(--accent); text-decoration: line-through; }
+.diff-new { color: var(--good); }
+.diff-arrow { color: var(--ink-soft); }
+
+.diff-warning { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-soft); }
+.diff-empty, .diff-unchanged { color: var(--ink-soft); font-size: 0.85rem; margin: 0; }
+
 /* ---------- Mobile ---------- */
 
 @media (max-width: 640px) {

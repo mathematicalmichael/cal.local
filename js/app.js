@@ -5,6 +5,7 @@ import { createDayView } from "./day-view.js";
 import { createListView } from "./list-view.js";
 import { createBizModal } from "./modal.js";
 import { createLegend } from "./legend.js";
+import { createImportModal } from "./import-modal.js";
 
 let state = load();
 
@@ -14,6 +15,7 @@ const dayRoot = document.querySelector("#day-view");
 const legendRoot = document.querySelector("#legend");
 const listRoot = document.querySelector("#list-view");
 const modalRoot = document.querySelector("#modal-root");
+const importModal = createImportModal(document.querySelector("#import-modal-root"));
 
 const legend = createLegend(legendRoot, {
   getState: () => state,
@@ -148,7 +150,9 @@ importInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     const imported = await importJson(file);
-    if (confirm(`Import ${imported.businesses.length} business(es)? This replaces your current data.\n(Export a backup first if unsure.)`)) {
+    // Show what the file would actually change rather than a bare count —
+    // an import is destructive (it replaces the whole document).
+    if (await importModal.open(state, imported)) {
       state = imported;
       persist();
     }

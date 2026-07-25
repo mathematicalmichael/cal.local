@@ -1,4 +1,4 @@
-const CACHE = "cal-local-v1";
+const CACHE = "cal-local-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,6 +14,8 @@ const ASSETS = [
   "./js/list-view.js",
   "./js/modal.js",
   "./js/legend.js",
+  "./js/diff.js",
+  "./js/import-modal.js",
   "./icons/icon.svg",
 ];
 
