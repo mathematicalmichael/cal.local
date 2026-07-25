@@ -1,6 +1,11 @@
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 export const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Display order for anything that lists a whole week. `dayOfWeek` stays
+// canonical 0=Sun (matching Date#getDay) in stored data — only presentation
+// is Monday-first, so never renumber the stored values to match this.
+export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
 export function toMinutes(hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + (m || 0);
@@ -84,6 +89,8 @@ export function hoursForDay(business, dow) {
 export function startOfWeek(d = new Date()) {
   const copy = new Date(d);
   copy.setHours(0, 0, 0, 0);
-  copy.setDate(copy.getDate() - copy.getDay());
+  // Monday-first: Sunday (getDay() === 0) belongs to the week that started
+  // six days earlier, not the one starting today.
+  copy.setDate(copy.getDate() - ((copy.getDay() + 6) % 7));
   return copy;
 }

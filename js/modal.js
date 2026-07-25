@@ -1,4 +1,4 @@
-import { DAY_NAMES } from "./time.js";
+import { DAY_NAMES, WEEK_ORDER } from "./time.js";
 import { newHourBlock, CATEGORIES } from "./schema.js";
 
 export function createBizModal(root, { onSave, onDelete }) {
@@ -172,7 +172,7 @@ export function createBizModal(root, { onSave, onDelete }) {
     rowsEl.innerHTML = "";
     current.hours
       .slice()
-      .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.start.localeCompare(b.start))
+      .sort((a, b) => ((a.dayOfWeek + 6) % 7) - ((b.dayOfWeek + 6) % 7) || a.start.localeCompare(b.start))
       .forEach((h) => rowsEl.appendChild(renderHourRow(h)));
     if (focusHourId) {
       const el = rowsEl.querySelector(`[data-hour-id="${focusHourId}"] input[name="start"]`);
@@ -186,7 +186,7 @@ export function createBizModal(root, { onSave, onDelete }) {
     row.dataset.hourId = h.id;
     row.innerHTML = `
       <select name="dayOfWeek">
-        ${DAY_NAMES.map((d, i) => `<option value="${i}" ${i === h.dayOfWeek ? "selected" : ""}>${d}</option>`).join("")}
+        ${WEEK_ORDER.map((i) => `<option value="${i}" ${i === h.dayOfWeek ? "selected" : ""}>${DAY_NAMES[i]}</option>`).join("")}
       </select>
       <input type="time" name="start" value="${h.start}">
       <span aria-hidden="true">–</span>

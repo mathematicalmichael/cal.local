@@ -154,6 +154,10 @@ export function normalize(doc) {
   d.businesses = (doc.businesses || []).map((b) => ({
     ...newBusiness(),
     ...b,
+    // Spreading `b` can put a null/number/missing name over the default, and
+    // the list view sorts on name.localeCompare — so coerce here rather than
+    // defending at every read site. Matches modal.js's "Untitled" fallback.
+    name: typeof b.name === "string" && b.name.trim() ? b.name : "Untitled",
     categories: Array.isArray(b.categories) ? b.categories.filter((c) => CATEGORY_KEYS.has(c)) : [],
     hours: (b.hours || []).map((h) => ({ ...newHourBlock(), ...h })),
     exceptions: (b.exceptions || []).map((e) => ({

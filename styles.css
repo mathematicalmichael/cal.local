@@ -679,6 +679,13 @@ button, input, select, textarea {
 }
 .hours-summary-row span:first-child { color: var(--ink); font-weight: 500; }
 
+/* Today's row is the one you're actually scanning for. */
+.hours-summary-row--today,
+.hours-summary-row--today span:first-child {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .hours-empty { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft); font-style: italic; }
 
 .biz-row__notes {

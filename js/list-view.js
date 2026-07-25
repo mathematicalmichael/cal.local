@@ -1,4 +1,4 @@
-import { DAY_SHORT, formatTime12, hoursForDay, isOpenAt, minutesUntilClose } from "./time.js";
+import { DAY_SHORT, WEEK_ORDER, formatTime12, hoursForDay, isOpenAt, minutesUntilClose } from "./time.js";
 import { CATEGORIES } from "./schema.js";
 
 const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label]));
@@ -68,12 +68,14 @@ export function createListView(root, { getState, isVisible, onEdit }) {
 
   function renderHoursSummary(biz) {
     if (!biz.hours.length) return `<span class="hours-empty">No hours set</span>`;
-    return DAY_SHORT.map((label, dow) => {
+    const today = new Date().getDay();
+    return WEEK_ORDER.map((dow) => {
       const blocks = hoursForDay(biz, dow);
       const text = blocks.length
         ? blocks.map((h) => `${formatTime12(h.start)}–${formatTime12(h.end)}`).join(", ")
         : "Closed";
-      return `<div class="hours-summary-row"><span>${label}</span><span>${text}</span></div>`;
+      const cls = dow === today ? "hours-summary-row hours-summary-row--today" : "hours-summary-row";
+      return `<div class="${cls}"><span>${DAY_SHORT[dow]}</span><span>${text}</span></div>`;
     }).join("");
   }
 

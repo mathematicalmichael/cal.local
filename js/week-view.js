@@ -1,4 +1,4 @@
-import { toMinutes, hoursForDay, DAY_SHORT } from "./time.js";
+import { toMinutes, hoursForDay, DAY_SHORT, WEEK_ORDER } from "./time.js";
 import { buildTimeGutter, layoutOverlaps, renderBlock, attachDayInteractions, pct } from "./grid-common.js";
 
 export function createWeekView(root, { getState, isVisible, onCreateBlock, onUpdateBlock, onEditBlock }) {
@@ -9,9 +9,9 @@ export function createWeekView(root, { getState, isVisible, onCreateBlock, onUpd
   root.innerHTML = `
     <div class="week-grid" role="grid" aria-label="Weekly hours grid">
       <div class="week-grid__corner" aria-hidden="true"></div>
-      ${DAY_SHORT.map((d) => `<div class="week-grid__day-label">${d}</div>`).join("")}
+      ${WEEK_ORDER.map((dow) => `<div class="week-grid__day-label">${DAY_SHORT[dow]}</div>`).join("")}
       <div class="week-grid__time-col" aria-hidden="true"></div>
-      ${DAY_SHORT.map((d, i) => `<div class="week-grid__day-body" data-dow-body="${i}"></div>`).join("")}
+      ${WEEK_ORDER.map((dow) => `<div class="week-grid__day-body" data-dow-body="${dow}"></div>`).join("")}
     </div>
   `;
 
@@ -45,7 +45,8 @@ export function createWeekView(root, { getState, isVisible, onCreateBlock, onUpd
     const now = new Date();
     const dow = now.getDay();
     const mins = now.getHours() * 60 + now.getMinutes();
-    const body = dayBodies[dow];
+    // dayBodies is in Monday-first display order, so index !== dayOfWeek.
+    const body = dayBodies.find((b) => Number(b.dataset.dowBody) === dow);
     if (!body) return;
     const line = document.createElement("div");
     line.className = "now-line";
