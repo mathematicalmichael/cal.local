@@ -25,21 +25,39 @@ export function dateKey(d) {
   return d.toISOString().slice(0, 10);
 }
 
-// Is business open at a given Date instant, honoring date-specific exceptions.
-export function isOpenAt(business, when = new Date()) {
+// Whichever hours block (dated exception or regular weekly hours) is
+// covering `when` right now, or null if the business is closed. Shared by
+// isOpenAt and minutesUntilClose so the two never drift apart.
+function activeBlockAt(business, when) {
   const key = dateKey(when);
   const exception = (business.exceptions || []).find((e) => e.date === key);
   const minutesNow = when.getHours() * 60 + when.getMinutes();
 
   if (exception) {
-    if (exception.closed) return false;
+    if (exception.closed) return null;
     if (exception.start && exception.end) {
-      return spans(exception.start, exception.end, minutesNow);
+      return spans(exception.start, exception.end, minutesNow) ? exception : null;
     }
   }
 
   const dow = when.getDay();
-  return (business.hours || []).some((h) => h.dayOfWeek === dow && spans(h.start, h.end, minutesNow));
+  return (business.hours || []).find((h) => h.dayOfWeek === dow && spans(h.start, h.end, minutesNow)) || null;
+}
+
+// Is business open at a given Date instant, honoring date-specific exceptions.
+export function isOpenAt(business, when = new Date()) {
+  return activeBlockAt(business, when) !== null;
+}
+
+// Minutes from `when` until the currently-open block closes, or null if the
+// business isn't open at `when`. Used to sort "open now" results by
+// soonest-closing first.
+export function minutesUntilClose(business, when = new Date()) {
+  const active = activeBlockAt(business, when);
+  if (!active) return null;
+  const minutesNow = when.getHours() * 60 + when.getMinutes();
+  const end = toMinutes(active.end);
+  return ((end - minutesNow) % 1440 + 1440) % 1440;
 }
 
 function spans(start, end, minutes) {

@@ -1,6 +1,6 @@
 import { emptyState, migrate, nowIso, SCHEMA_VERSION } from "./schema.js";
 
-const KEY = "vtcal.state.v1"; // storage key stays stable across schema bumps
+const KEY = "cal.local.state.v1";
 
 export function load() {
   try {
@@ -9,7 +9,7 @@ export function load() {
     const parsed = JSON.parse(raw);
     return migrate(parsed);
   } catch (err) {
-    console.error("vtcal: failed to load state, starting fresh", err);
+    console.error("cal.local: failed to load state, starting fresh", err);
     return emptyState();
   }
 }
@@ -25,11 +25,14 @@ export function exportJson(state) {
   const a = document.createElement("a");
   const stamp = new Date().toISOString().slice(0, 10);
   a.href = url;
-  a.download = `vtcal-export-${stamp}.json`;
+  a.download = `cal-local-export-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Revoking immediately can race with the browser's async download start
+  // and produce a broken/empty download with a mangled filename — give it
+  // a moment first.
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 export function importJson(file) {

@@ -1,4 +1,4 @@
-const CACHE = "vtcal-v1";
+const CACHE = "cal-local-v1";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,8 +9,11 @@ const ASSETS = [
   "./js/storage.js",
   "./js/time.js",
   "./js/week-view.js",
+  "./js/day-view.js",
+  "./js/grid-common.js",
   "./js/list-view.js",
   "./js/modal.js",
+  "./js/legend.js",
   "./icons/icon.svg",
 ];
 

@@ -1,6 +1,6 @@
 {
-  "name": "vtcal — hours ledger",
-  "short_name": "vtcal",
+  "name": "cal.local — hours ledger",
+  "short_name": "cal.local",
   "description": "A personal ledger of store hours, kept entirely in your browser.",
   "start_url": "./index.html",
   "scope": "./",

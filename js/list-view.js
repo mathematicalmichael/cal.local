@@ -1,6 +1,9 @@
-import { DAY_SHORT, formatTime12, hoursForDay, isOpenAt } from "./time.js";
+import { DAY_SHORT, formatTime12, hoursForDay, isOpenAt, minutesUntilClose } from "./time.js";
+import { CATEGORIES } from "./schema.js";
 
-export function createListView(root, { getState, onEdit }) {
+const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label]));
+
+export function createListView(root, { getState, isVisible, onEdit }) {
   let query = "";
   let openOnly = false;
 
@@ -25,15 +28,17 @@ export function createListView(root, { getState, onEdit }) {
   openOnlyInput.addEventListener("change", () => { openOnly = openOnlyInput.checked; render(); });
 
   function matches(biz) {
+    if (!isVisible(biz)) return false;
     if (openOnly && !isOpenAt(biz)) return false;
     if (!query) return true;
-    const hay = [biz.name, biz.category, biz.notes, biz.address].join(" ").toLowerCase();
+    const categoryText = biz.categories.map((k) => CATEGORY_LABELS[k] || k).join(" ");
+    const hay = [biz.name, categoryText, biz.notes, biz.address].join(" ").toLowerCase();
     return hay.includes(query);
   }
 
   function render() {
     const state = getState();
-    const items = state.businesses.filter(matches).sort((a, b) => a.name.localeCompare(b.name));
+    const items = state.businesses.filter(matches).sort(openOnly ? byClosingSoonest : byName);
     listEl.innerHTML = "";
     emptyEl.hidden = items.length > 0;
     items.forEach((biz) => listEl.appendChild(renderRow(biz)));
@@ -51,7 +56,7 @@ export function createListView(root, { getState, onEdit }) {
           <h3>${escapeHtml(biz.name || "Untitled")}</h3>
           <span class="status-pill ${open ? "status-pill--open" : "status-pill--closed"}">${open ? "Open now" : "Closed"}</span>
         </div>
-        ${biz.category ? `<div class="biz-row__category">${escapeHtml(biz.category)}</div>` : ""}
+        ${biz.categories.length ? `<div class="biz-row__category">${biz.categories.map((k) => escapeHtml(CATEGORY_LABELS[k] || k)).join(" · ")}</div>` : ""}
         <div class="biz-row__hours">${renderHoursSummary(biz)}</div>
         ${biz.notes ? `<div class="biz-row__notes">${escapeHtml(biz.notes)}</div>` : ""}
       </div>
@@ -70,6 +75,17 @@ export function createListView(root, { getState, onEdit }) {
         : "Closed";
       return `<div class="hours-summary-row"><span>${label}</span><span>${text}</span></div>`;
     }).join("");
+  }
+
+  function byName(a, b) {
+    return a.name.localeCompare(b.name);
+  }
+
+  // "Open now" is most useful sorted by whoever's closing soonest — that's
+  // the one you'd want to rush to, not alphabetical order.
+  function byClosingSoonest(a, b) {
+    const diff = (minutesUntilClose(a) ?? Infinity) - (minutesUntilClose(b) ?? Infinity);
+    return diff !== 0 ? diff : byName(a, b);
   }
 
   render();

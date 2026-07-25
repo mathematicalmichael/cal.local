@@ -1,5 +1,5 @@
 /* ============================================================
-   vtcal — "ledger" aesthetic: cream paper, ink ruling, warm accents.
+   cal.local — "ledger" aesthetic: cream paper, ink ruling, warm accents.
    ============================================================ */
 
 :root {
@@ -38,6 +38,37 @@
   }
 }
 
+/* Manual toggle (js/app.js stamps data-theme on <html>) always wins over
+   the OS-level prefers-color-scheme signal above, in both directions. */
+:root[data-theme="dark"] {
+  --paper: #1d1a16;
+  --paper-dark: #17140f;
+  --ink: #ece3d0;
+  --ink-soft: #b8ac93;
+  --rule: rgba(236, 227, 208, 0.14);
+  --rule-strong: rgba(236, 227, 208, 0.28);
+  --accent: #e08a63;
+  --good: #6fbfa8;
+  --good-bg: rgba(111, 191, 168, 0.16);
+  --bad-bg: rgba(224, 138, 99, 0.12);
+  --shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --paper: #f4ecd8;
+  --paper-dark: #ebe0c6;
+  --ink: #2b2620;
+  --ink-soft: #5c5548;
+  --rule: rgba(43, 38, 32, 0.16);
+  --rule-strong: rgba(43, 38, 32, 0.3);
+  --accent: #c65d3b;
+  --good: #3b6e63;
+  --good-bg: rgba(59, 110, 99, 0.14);
+  --bad-bg: rgba(198, 93, 59, 0.1);
+  --shadow: 0 12px 30px -12px rgba(43, 38, 32, 0.35);
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -47,9 +78,6 @@ html, body {
 
 body {
   background: var(--paper);
-  background-image:
-    linear-gradient(var(--rule) 1px, transparent 1px);
-  background-size: 100% 2.1rem;
   color: var(--ink);
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
@@ -222,7 +250,20 @@ button, input, select, textarea {
 .app-main {
   flex: 1;
   min-height: 0;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem;
+  /* Anchored to app-main's own top (not <body>'s) so the legend rows below
+     can be sized in exact multiples of this rhythm and land a rule line
+     right at each row boundary instead of cutting through a chip. */
+  background-image: linear-gradient(var(--rule) 1px, transparent 1px);
+  background-size: 100% 2.1rem;
+  background-position: top;
+}
+
+.view-stack {
+  flex: 1;
+  min-height: 0;
   display: flex;
 }
 
@@ -235,6 +276,145 @@ button, input, select, textarea {
 .view-panel[hidden] {
   display: none;
 }
+
+.week-grid-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* ---------- Day view ---------- */
+
+.day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0.1rem 0.75rem;
+}
+
+.day-nav__btn {
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.day-nav__btn:active { transform: scale(0.94); }
+
+.day-nav__label {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--ink);
+  min-width: 9rem;
+  text-align: center;
+}
+
+.day-grid {
+  --hour-height: 64px;
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  grid-template-rows: calc(var(--hour-height) * 24);
+  height: calc(var(--hour-height) * 24);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  overflow-y: auto;
+  background: var(--paper);
+  flex: 1;
+  box-shadow: var(--shadow);
+  touch-action: pan-y;
+}
+
+/* ---------- Legend (week-view layer toggles) ---------- */
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.1rem;
+  /* Margins are whole multiples of the 2.1rem ruled-line rhythm (see
+     .app-main) so the breathing room above/below doesn't shift the chip
+     row off a rule-line boundary and reintroduce a line cutting through
+     the middle of a chip. */
+  margin: 2.1rem 0;
+}
+.legend[hidden] {
+  display: none;
+}
+
+/* Each row is exactly one ruled-line band (2.1rem, matching .app-main's
+   background rhythm) so a rule sits right at the row boundary instead of
+   cutting through the middle of a chip. */
+.legend__row {
+  height: 2.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.legend__chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+.legend__chips::-webkit-scrollbar {
+  display: none; /* Chrome/Safari — still scrollable via touch/drag, just no visible track */
+}
+
+.legend__chip {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  flex-shrink: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 0.32rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.legend__chip:active { transform: scale(0.96); }
+
+.legend__chip--off {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: var(--rule-strong);
+  font-weight: 500;
+}
+
+.legend__actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.legend__action {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0.3rem 0.4rem;
+  text-decoration: underline;
+}
+.legend__action:hover { color: var(--ink); }
 
 .app-footer {
   text-align: center;
@@ -335,8 +515,8 @@ button, input, select, textarea {
 
 .hour-block {
   position: absolute;
-  left: 3px;
-  right: 3px;
+  /* left/width are set per-instance in JS so overlapping blocks can sit
+     side-by-side instead of one covering the other. */
   border-radius: 6px;
   background: color-mix(in srgb, var(--block-color) 82%, var(--paper));
   border: 1.5px solid var(--block-color);
@@ -350,9 +530,11 @@ button, input, select, textarea {
 .hour-block:active { cursor: grabbing; }
 
 .hour-block--ghost {
+  left: 3px;
+  right: 3px;
   background: var(--bad-bg);
   border: 1.5px dashed var(--accent);
-  z-index: 3;
+  z-index: 10;
   pointer-events: none;
 }
 
@@ -592,6 +774,38 @@ button, input, select, textarea {
 
 .field-row { display: flex; gap: 0.75rem; }
 
+.category-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.field-error {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  border: 1.5px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+.category-chip--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper));
+  color: var(--ink);
+}
+
 .hours-editor {
   border-top: 2px solid var(--rule-strong);
   padding-top: 0.85rem;
@@ -649,7 +863,7 @@ button, input, select, textarea {
   .app-header h1 { font-size: 1.1rem; }
   .app-header__tagline { display: none; }
   .view-tabs { order: 3; width: 100%; margin: 0; justify-content: center; }
-  .app-main { padding: 0.6rem; }
+  .app-main { padding: 0 0.6rem 0.6rem; }
   .week-grid { --hour-height: 46px; grid-template-columns: 2.6rem repeat(7, minmax(92px, 1fr)); }
   .hour-row { grid-template-columns: 1fr 1fr; row-gap: 0.35rem; }
   .hour-row select { grid-column: 1 / -1; }
@@ -661,7 +875,7 @@ button, input, select, textarea {
 @media (max-height: 480px) and (orientation: landscape) {
   .app-header__tagline { display: none; }
   .app-footer { display: none; }
-  .app-main { padding: 0.4rem; }
+  .app-main { padding: 0 0.4rem 0.4rem; }
   .week-grid { --hour-height: 40px; }
 }
 

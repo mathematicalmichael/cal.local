@@ -1,17 +1,48 @@
 import { load, save, exportJson, importJson } from "./storage.js";
 import { newBusiness, newHourBlock } from "./schema.js";
 import { createWeekView } from "./week-view.js";
+import { createDayView } from "./day-view.js";
 import { createListView } from "./list-view.js";
 import { createBizModal } from "./modal.js";
+import { createLegend } from "./legend.js";
 
 let state = load();
 
 const weekRoot = document.querySelector("#week-view");
+const weekGridRoot = document.querySelector("#week-grid-root");
+const dayRoot = document.querySelector("#day-view");
+const legendRoot = document.querySelector("#legend");
 const listRoot = document.querySelector("#list-view");
 const modalRoot = document.querySelector("#modal-root");
 
-const weekView = createWeekView(weekRoot, {
+const legend = createLegend(legendRoot, {
   getState: () => state,
+  onToggleCategory: (key, forceValue) => {
+    if (key === "__all__") {
+      Object.keys(state.categoryFilters).forEach((k) => { state.categoryFilters[k] = forceValue; });
+    } else {
+      state.categoryFilters[key] = !(state.categoryFilters[key] !== false);
+    }
+    persist();
+  },
+  onIsolateCategory: (key) => {
+    Object.keys(state.categoryFilters).forEach((k) => { state.categoryFilters[k] = k === key; });
+    persist();
+  },
+});
+
+// The category filter is the only visibility control now — a business with
+// no categories isn't affected by it at all (shows everywhere).
+function isBizVisible(biz) {
+  if (!biz.categories.length) return true;
+  return biz.categories.some((k) => state.categoryFilters[k] !== false);
+}
+
+// Shared by both the week grid and the day grid — same underlying data,
+// just different amounts of horizontal room per day.
+const gridHandlers = {
+  getState: () => state,
+  isVisible: isBizVisible,
   onCreateBlock: (dow, start, end) => {
     if (!state.businesses.length) {
       const biz = newBusiness({ name: "New business" });
@@ -35,10 +66,14 @@ const weekView = createWeekView(weekRoot, {
     const biz = state.businesses.find((b) => b.id === bizId);
     if (biz) modal.open(biz, { focusHourId: hourId });
   },
-});
+};
+
+const weekView = createWeekView(weekGridRoot, gridHandlers);
+const dayView = createDayView(dayRoot, gridHandlers);
 
 const listView = createListView(listRoot, {
   getState: () => state,
+  isVisible: isBizVisible,
   onEdit: (bizId) => {
     const biz = state.businesses.find((b) => b.id === bizId);
     if (biz) modal.open(biz);
@@ -69,7 +104,9 @@ function addBlockAllDays(biz, start, end) {
 function persist() {
   save(state);
   weekView.render();
+  dayView.render();
   listView.render();
+  legend.render();
 }
 
 function openBusinessPicker(dow, start, end) {
@@ -116,24 +153,61 @@ importInput.addEventListener("change", async () => {
       persist();
     }
   } catch (err) {
-    alert("Could not read that file as vtcal JSON.");
+    alert("Could not read that file as cal.local JSON.");
     console.error(err);
   } finally {
     importInput.value = "";
   }
 });
 
+const VIEW_KEY = "cal.local.view";
+const VALID_VIEWS = ["week", "day", "list"];
+
 const tabs = [...document.querySelectorAll(".view-tab")];
-tabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    tabs.forEach((t) => t.classList.toggle("is-active", t === tab));
-    const view = tab.dataset.view;
-    weekRoot.hidden = view !== "week";
-    listRoot.hidden = view !== "list";
-    if (view === "week") weekView.render();
-    if (view === "list") listView.render();
+
+function setView(view) {
+  localStorage.setItem(VIEW_KEY, view);
+  tabs.forEach((t) => {
+    const active = t.dataset.view === view;
+    t.classList.toggle("is-active", active);
+    t.setAttribute("aria-selected", String(active));
   });
+  weekRoot.hidden = view !== "week";
+  dayRoot.hidden = view !== "day";
+  listRoot.hidden = view !== "list";
+  if (view === "week") weekView.render();
+  if (view === "day") dayView.render();
+  if (view === "list") listView.render();
+}
+
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => setView(tab.dataset.view));
 });
+
+const savedView = localStorage.getItem(VIEW_KEY);
+if (savedView && VALID_VIEWS.includes(savedView) && savedView !== "week") {
+  setView(savedView);
+}
+
+const THEME_KEY = "cal.local.theme";
+const themeToggle = document.querySelector("#theme-toggle");
+
+function currentTheme() {
+  return document.documentElement.dataset.theme
+    || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+
+function updateThemeIcon() {
+  themeToggle.textContent = currentTheme() === "dark" ? "☾" : "☀";
+}
+
+themeToggle.addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem(THEME_KEY, next);
+  updateThemeIcon();
+});
+updateThemeIcon();
 
 document.querySelector(".menu-trigger").addEventListener("click", (e) => {
   e.stopPropagation();
@@ -142,7 +216,7 @@ document.querySelector(".menu-trigger").addEventListener("click", (e) => {
 document.addEventListener("click", () => document.querySelector(".menu").classList.remove("is-open"));
 
 // keep "now" line and open/closed state fresh
-setInterval(() => { weekView.render(); listView.render(); }, 60_000);
+setInterval(() => { weekView.render(); dayView.render(); listView.render(); }, 60_000);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

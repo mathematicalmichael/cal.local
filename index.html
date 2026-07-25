@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>vtcal — hours ledger</title>
+  <title>cal.local — hours ledger</title>
   <meta name="description" content="A personal ledger of store hours: a draggable weekly grid plus a searchable list, all kept in your browser.">
   <meta name="theme-color" content="#f4ecd8">
   <link rel="manifest" href="./manifest.webmanifest">
@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="vtcal">
+  <meta name="apple-mobile-web-app-title" content="cal.local">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,16 +24,18 @@
       <div class="app-header__brand">
         <span class="app-header__mark">§</span>
         <div>
-          <h1>vtcal</h1>
+          <h1>cal.local</h1>
           <p class="app-header__tagline">a ledger of hours kept</p>
         </div>
       </div>
       <nav class="view-tabs" role="tablist" aria-label="View">
         <button type="button" class="view-tab is-active" data-view="week" role="tab" aria-selected="true">Week</button>
+        <button type="button" class="view-tab" data-view="day" role="tab" aria-selected="false">Day</button>
         <button type="button" class="view-tab" data-view="list" role="tab" aria-selected="false">List</button>
       </nav>
       <div class="app-header__actions">
         <button type="button" id="add-business" class="btn btn--primary">+ Business</button>
+        <button type="button" id="theme-toggle" class="btn btn--ghost btn--icon" aria-label="Toggle light/dark theme">◐</button>
         <div class="menu">
           <button type="button" class="btn btn--ghost btn--icon menu-trigger" aria-haspopup="true" aria-label="More actions">⋯</button>
           <div class="menu__panel">
@@ -46,8 +48,14 @@
     </header>
 
     <main class="app-main">
-      <section id="week-view" class="view-panel" aria-label="Week view"></section>
-      <section id="list-view" class="view-panel" aria-label="List view" hidden></section>
+      <div id="legend" aria-label="Category filter"></div>
+      <div class="view-stack">
+        <section id="week-view" class="view-panel" aria-label="Week view">
+          <div id="week-grid-root" class="week-grid-root"></div>
+        </section>
+        <section id="day-view" class="view-panel" aria-label="Day view" hidden></section>
+        <section id="list-view" class="view-panel" aria-label="List view" hidden></section>
+      </div>
     </main>
 
     <footer class="app-footer">
@@ -57,6 +65,29 @@
 
   <div id="modal-root"></div>
 
+  <script>
+    // Runs synchronously, before first paint, so the correct theme and
+    // active view are already in place — no visible flash/flip once
+    // app.js (a deferred module) finishes loading and takes over.
+    (function () {
+      try {
+        var theme = localStorage.getItem('cal.local.theme');
+        if (theme === 'light' || theme === 'dark') {
+          document.documentElement.dataset.theme = theme;
+        }
+        var view = localStorage.getItem('cal.local.view');
+        if (view === 'day' || view === 'list') {
+          document.querySelectorAll('.view-tab').forEach(function (t) {
+            var active = t.dataset.view === view;
+            t.classList.toggle('is-active', active);
+            t.setAttribute('aria-selected', String(active));
+          });
+          document.getElementById('week-view').hidden = true;
+          document.getElementById(view + '-view').hidden = false;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>

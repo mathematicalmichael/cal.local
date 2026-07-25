@@ -1,5 +1,5 @@
 import { DAY_NAMES } from "./time.js";
-import { newHourBlock } from "./schema.js";
+import { newHourBlock, CATEGORIES } from "./schema.js";
 
 export function createBizModal(root, { onSave, onDelete }) {
   root.innerHTML = `
@@ -14,20 +14,21 @@ export function createBizModal(root, { onSave, onDelete }) {
             <span>Name</span>
             <input type="text" name="name" required>
           </label>
+          <div class="field">
+            <span>Categories</span>
+            <div class="category-select"></div>
+            <p class="field-error category-error" hidden>Pick at least one category — use "Other" if nothing fits.</p>
+          </div>
           <div class="field-row">
             <label class="field">
-              <span>Category</span>
-              <input type="text" name="category" placeholder="Coffee, Hardware, Bakery…">
+              <span>Address</span>
+              <input type="text" name="address">
             </label>
             <label class="field">
               <span>Color</span>
               <input type="color" name="color">
             </label>
           </div>
-          <label class="field">
-            <span>Address</span>
-            <input type="text" name="address">
-          </label>
           <div class="field-row">
             <label class="field">
               <span>Phone</span>
@@ -64,35 +65,51 @@ export function createBizModal(root, { onSave, onDelete }) {
   const backdrop = root.querySelector(".modal-backdrop");
   const form = {
     name: root.querySelector('[name="name"]'),
-    category: root.querySelector('[name="category"]'),
     color: root.querySelector('[name="color"]'),
     address: root.querySelector('[name="address"]'),
     phone: root.querySelector('[name="phone"]'),
     website: root.querySelector('[name="website"]'),
     notes: root.querySelector('[name="notes"]'),
   };
+  const categorySelectEl = root.querySelector(".category-select");
+  const categoryErrorEl = root.querySelector(".category-error");
   const rowsEl = root.querySelector(".hours-editor__rows");
   const deleteBtn = root.querySelector(".delete-biz");
 
   let current = null; // working copy of business being edited
   let isNew = false;
 
-  root.querySelector(".modal__close").addEventListener("click", close);
-  root.querySelector(".cancel-biz").addEventListener("click", close);
-  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
+  // Dragging out a new hours block on the grid saves a speculative business
+  // to state immediately (so the block has something to attach to) before
+  // this modal ever opens. If the user backs out here without saving, that
+  // speculative entry needs to be rolled back — otherwise it's exactly the
+  // kind of category-less orphan the required-category rule is meant to
+  // prevent, just created a different way.
+  function cancel() {
+    if (isNew && current) onDelete(current.id);
+    close();
+  }
+
+  root.querySelector(".modal__close").addEventListener("click", cancel);
+  root.querySelector(".cancel-biz").addEventListener("click", cancel);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) cancel(); });
   root.querySelector(".add-hour").addEventListener("click", () => {
     const prev = current.hours[current.hours.length - 1];
     if (prev) {
-      const { id, ...rest } = prev;
-      current.hours.push(newHourBlock(rest));
+      const { id, dayOfWeek, ...rest } = prev;
+      current.hours.push(newHourBlock({ ...rest, dayOfWeek: (dayOfWeek + 1) % 7 }));
     } else {
       current.hours.push(newHourBlock());
     }
     renderHourRows();
   });
   root.querySelector(".save-biz").addEventListener("click", () => {
+    if (current.categories.length === 0) {
+      categoryErrorEl.hidden = false;
+      categorySelectEl.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
     current.name = form.name.value.trim() || "Untitled";
-    current.category = form.category.value.trim();
     current.color = form.color.value;
     current.address = form.address.value.trim();
     current.phone = form.phone.value.trim();
@@ -113,13 +130,14 @@ export function createBizModal(root, { onSave, onDelete }) {
     current = JSON.parse(JSON.stringify(biz));
     isNew = asNew;
     form.name.value = current.name;
-    form.category.value = current.category;
     form.color.value = current.color;
     form.address.value = current.address;
     form.phone.value = current.phone;
     form.website.value = current.website;
     form.notes.value = current.notes;
     deleteBtn.hidden = asNew;
+    categoryErrorEl.hidden = true;
+    renderCategorySelect();
     renderHourRows(focusHourId);
     backdrop.hidden = false;
     setTimeout(() => form.name.focus(), 0);
@@ -128,6 +146,26 @@ export function createBizModal(root, { onSave, onDelete }) {
   function close() {
     backdrop.hidden = true;
     current = null;
+  }
+
+  function renderCategorySelect() {
+    categorySelectEl.innerHTML = "";
+    CATEGORIES.forEach((cat) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      const active = current.categories.includes(cat.key);
+      chip.className = "category-chip" + (active ? " category-chip--active" : "");
+      chip.textContent = cat.label;
+      chip.setAttribute("aria-pressed", String(active));
+      chip.addEventListener("click", () => {
+        current.categories = current.categories.includes(cat.key)
+          ? current.categories.filter((k) => k !== cat.key)
+          : [...current.categories, cat.key];
+        if (current.categories.length > 0) categoryErrorEl.hidden = true;
+        renderCategorySelect();
+      });
+      categorySelectEl.appendChild(chip);
+    });
   }
 
   function renderHourRows(focusHourId) {

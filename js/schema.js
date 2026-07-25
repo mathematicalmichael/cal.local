@@ -1,17 +1,43 @@
-// Data schema for vtcal.
+// Data schema for cal.local.
 //
 // SCHEMA_VERSION is bumped whenever the shape of stored data changes.
 // Every past shape must have a migration step in MIGRATIONS that upgrades
 // it to the next version. `load()` in storage.js walks the chain from
 // whatever version is on disk up to CURRENT, so old exports always load.
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
+
+// Fixed category vocabulary — a business can belong to several. Adding a
+// category here is additive (no version bump needed); renaming or removing
+// one is a breaking change to existing categorized businesses and needs a
+// migration to remap or drop the old key.
+export const CATEGORIES = [
+  { key: "food", label: "Food" },
+  { key: "grocery", label: "Grocery" },
+  { key: "shopping", label: "Shopping" },
+  { key: "hardware", label: "Hardware" },
+  { key: "administrative", label: "Administrative" },
+  { key: "health", label: "Health" },
+  { key: "auto", label: "Auto" },
+  { key: "services", label: "Services" },
+  { key: "government", label: "Government" },
+  { key: "personal-care", label: "Personal Care" },
+  { key: "other", label: "Other" },
+];
+const CATEGORY_KEYS = new Set(CATEGORIES.map((c) => c.key));
+
+export function defaultCategoryFilters() {
+  const f = {};
+  CATEGORIES.forEach((c) => { f[c.key] = true; });
+  return f;
+}
 
 // dayOfWeek: 0=Sun .. 6=Sat, matches Date#getDay().
 export function emptyState() {
   return {
     schemaVersion: SCHEMA_VERSION,
     businesses: [],
+    categoryFilters: defaultCategoryFilters(),
     meta: {
       createdAt: nowIso(),
       updatedAt: nowIso(),
@@ -32,7 +58,7 @@ export function newBusiness(partial = {}) {
   return {
     id: newId(),
     name: "",
-    category: "",
+    categories: [], // keys from CATEGORIES; a business can belong to several
     address: "",
     phone: "",
     website: "",
@@ -71,9 +97,37 @@ function pickColor() {
 // Migration chain. MIGRATIONS[v] upgrades a document FROM version v TO v+1.
 // Add new entries here as SCHEMA_VERSION increases; never remove old ones.
 export const MIGRATIONS = {
-  // Example shape for the future:
-  // 1: (doc) => ({ ...doc, schemaVersion: 2, businesses: doc.businesses.map(b => ({...b, newField: "" })) }),
+  // v1 -> v2: added a per-business `visible` toggle for the week-view legend
+  // (a business with many always-open hours can be hidden from the grid
+  // without deleting its data). normalize() would default this anyway, but
+  // the migration entry documents the version bump explicitly.
+  1: (doc) => ({
+    ...doc,
+    schemaVersion: 2,
+    businesses: (doc.businesses || []).map((b) => ({ ...b, visible: b.visible !== false })),
+  }),
+  // v2 -> v3: free-text `category` became a fixed, multi-select `categories`
+  // list, plus a top-level `categoryFilters` layer that can hide a whole
+  // category's businesses at once. The old `category` string is left in
+  // place on each business — unused by the UI now, but not deleted, in case
+  // a future version wants it back for a "custom category" fallback. (The
+  // per-business `visible` toggle added in v2 was later removed from the UI
+  // entirely — category filtering replaced it — but any lingering `visible`
+  // key on old documents is harmless and left alone.)
+  2: (doc) => ({
+    ...doc,
+    schemaVersion: 3,
+    categoryFilters: defaultCategoryFilters(),
+    businesses: (doc.businesses || []).map((b) => ({ ...b, categories: guessCategories(b.category) })),
+  }),
 };
+
+function guessCategories(legacyCategory) {
+  if (!legacyCategory) return [];
+  const needle = String(legacyCategory).trim().toLowerCase();
+  const match = CATEGORIES.find((c) => c.key === needle || c.label.toLowerCase() === needle);
+  return match ? [match.key] : [];
+}
 
 export function migrate(doc) {
   let d = doc;
@@ -100,6 +154,7 @@ export function normalize(doc) {
   d.businesses = (doc.businesses || []).map((b) => ({
     ...newBusiness(),
     ...b,
+    categories: Array.isArray(b.categories) ? b.categories.filter((c) => CATEGORY_KEYS.has(c)) : [],
     hours: (b.hours || []).map((h) => ({ ...newHourBlock(), ...h })),
     exceptions: (b.exceptions || []).map((e) => ({
       id: e.id || newId(),
@@ -110,6 +165,7 @@ export function normalize(doc) {
       note: e.note || "",
     })),
   }));
+  d.categoryFilters = { ...defaultCategoryFilters(), ...(doc.categoryFilters || {}) };
   d.meta = { ...emptyState().meta, ...(doc.meta || {}) };
   return d;
 }
