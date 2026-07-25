@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>vtcal — hours ledger</title>
+  <meta name="description" content="A personal ledger of store hours: a draggable weekly grid plus a searchable list, all kept in your browser.">
+  <meta name="theme-color" content="#f4ecd8">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="vtcal">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-header__brand">
+        <span class="app-header__mark">§</span>
+        <div>
+          <h1>vtcal</h1>
+          <p class="app-header__tagline">a ledger of hours kept</p>
+        </div>
+      </div>
+      <nav class="view-tabs" role="tablist" aria-label="View">
+        <button type="button" class="view-tab is-active" data-view="week" role="tab" aria-selected="true">Week</button>
+        <button type="button" class="view-tab" data-view="list" role="tab" aria-selected="false">List</button>
+      </nav>
+      <div class="app-header__actions">
+        <button type="button" id="add-business" class="btn btn--primary">+ Business</button>
+        <div class="menu">
+          <button type="button" class="btn btn--ghost btn--icon menu-trigger" aria-haspopup="true" aria-label="More actions">⋯</button>
+          <div class="menu__panel">
+            <button type="button" id="export-json">Export JSON</button>
+            <button type="button" id="import-trigger">Import JSON</button>
+          </div>
+        </div>
+        <input type="file" id="import-json" accept="application/json" hidden>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section id="week-view" class="view-panel" aria-label="Week view"></section>
+      <section id="list-view" class="view-panel" aria-label="List view" hidden></section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Data lives only in this browser. Export a JSON backup now and then.</p>
+    </footer>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

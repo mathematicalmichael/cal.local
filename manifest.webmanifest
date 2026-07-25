@@ -1,0 +1,14 @@
+{
+  "name": "vtcal — hours ledger",
+  "short_name": "vtcal",
+  "description": "A personal ledger of store hours, kept entirely in your browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4ecd8",
+  "theme_color": "#f4ecd8",
+  "orientation": "any",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
