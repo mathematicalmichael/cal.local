@@ -6,6 +6,7 @@ import { createListView } from "./list-view.js";
 import { createBizModal } from "./modal.js";
 import { createLegend } from "./legend.js";
 import { createImportModal } from "./import-modal.js";
+import { createPickerModal } from "./picker-modal.js";
 
 let state = load();
 
@@ -16,6 +17,7 @@ const legendRoot = document.querySelector("#legend");
 const listRoot = document.querySelector("#list-view");
 const modalRoot = document.querySelector("#modal-root");
 const importModal = createImportModal(document.querySelector("#import-modal-root"));
+const picker = createPickerModal(document.querySelector("#picker-modal-root"));
 
 const legend = createLegend(legendRoot, {
   getState: () => state,
@@ -111,27 +113,23 @@ function persist() {
   legend.render();
 }
 
-function openBusinessPicker(dow, start, end) {
-  const names = state.businesses.map((b, i) => `${i + 1}. ${b.name || "Untitled"}`).join("\n");
-  const answer = prompt(
-    `Add this time block to which business?\n${names}\n\nEnter a number, or type a new business name:`
-  );
-  if (answer == null || answer.trim() === "") return;
-  const trimmed = answer.trim();
-  const idx = Number(trimmed);
-  let biz;
-  if (Number.isInteger(idx) && idx >= 1 && idx <= state.businesses.length) {
-    biz = state.businesses[idx - 1];
+async function openBusinessPicker(dow, start, end) {
+  // Was a prompt() listing businesses as numbered lines — iOS truncates that
+  // dialog, so past a handful of places you couldn't see or pick most of them.
+  const choice = await picker.open({ dow, start, end, businesses: state.businesses });
+  if (!choice) return;
+  if (choice.id) {
+    const biz = state.businesses.find((b) => b.id === choice.id);
+    if (!biz) return;
     addBlockAllDays(biz, start, end);
     persist();
-  } else {
-    biz = newBusiness({ name: trimmed });
-    addBlockAllDays(biz, start, end);
-    state.businesses.push(biz);
-    persist();
-    modal.open(biz, { asNew: true });
     return;
   }
+  const biz = newBusiness({ name: choice.name });
+  addBlockAllDays(biz, start, end);
+  state.businesses.push(biz);
+  persist();
+  modal.open(biz, { asNew: true });
 }
 
 // --- Toolbar: add / export / import / view switch ---

@@ -924,6 +924,149 @@ button, input, select, textarea {
   background-color: var(--good-bg);
 }
 
+/* ---------- Business picker ---------- */
+
+/* A ledger index card: ruled rows, a mono gutter of entry numbers, and the
+   block being filed shown as a rubber stamp in the header. */
+.picker { width: min(480px, 100%); }
+
+.picker__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 0.85rem;
+  border-bottom: 2px solid var(--rule-strong);
+}
+.picker__titles { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.picker__header h2 { margin: 0; font-size: 1.15rem; }
+
+.picker__stamp {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  transform: rotate(-1.5deg);
+}
+
+.picker__search { padding: 0.75rem 1.25rem; }
+.picker__input {
+  width: 100%;
+  border: none;
+  border-bottom: 1.5px solid var(--rule-strong);
+  background: transparent;
+  padding: 0.5rem 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.picker__input:focus { outline: none; border-bottom-color: var(--accent); }
+
+.picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.picker-row {
+  display: grid;
+  grid-template-columns: 2.1rem 12px 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  /* 48px min target: this is the primary touch surface of the whole flow. */
+  min-height: 48px;
+  padding: 0.55rem 1.25rem;
+  border-top: 1px solid var(--rule);
+  cursor: pointer;
+  animation: picker-row-in 0.24s ease both;
+}
+.picker-row:first-child { border-top: none; }
+.picker-row.is-active { background: var(--good-bg); }
+.picker-row.is-active .picker-row__num { color: var(--accent); }
+.picker-row:active { background: var(--paper-dark); }
+
+@keyframes picker-row-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.picker-row__num {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  text-align: right;
+  letter-spacing: 0.04em;
+}
+.picker-row__mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,0.25);
+}
+.picker-row__mark--new {
+  border: 1.5px dashed var(--ink-soft);
+  border-radius: 3px;
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  width: 14px;
+  height: 14px;
+}
+
+.picker-row__body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.picker-row__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picker-row__meta {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  text-transform: lowercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-row--new .picker-row__name { font-style: italic; }
+.picker-row--new { border-top: 1px dashed var(--rule-strong); }
+
+.picker__empty {
+  padding: 1.4rem 1.25rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+.picker__footer {
+  border-top: 2px solid var(--rule-strong);
+  /* Bottom-sheet on phones, so keep Cancel clear of the home indicator. */
+  padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
+}
+.picker__hint {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+}
+/* The keyboard hint is noise on a touch device with no arrow keys. */
+@media (pointer: coarse) {
+  .picker__hint { display: none; }
+}
+
 /* ---------- Import diff ---------- */
 
 .import-modes {

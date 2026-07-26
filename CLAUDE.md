@@ -168,8 +168,7 @@ overkill for a one-person tool — that's the whole ask here.
   the two-row structure is what keeps 12am from being clipped under the
   sticky header — don't collapse it back into per-column sticky headers.
   Creating a new block on empty grid space calls back into `app.js`, which
-  currently uses a `prompt()`-based picker when more than one business
-  exists — deliberate low-ceremony choice, not an oversight. A dragged
+  opens `picker-modal.js` when more than one business exists. A dragged
   selection defaults to *every* day of the week (`app.js`'s
   `addBlockAllDays`) since removing days you don't want is easier than
   adding six more one at a time.
@@ -179,6 +178,14 @@ overkill for a one-person tool — that's the whole ask here.
   businesses are open most of the day — the day view trades breadth for
   width. Shares all interaction logic with week-view.js via
   `grid-common.js`; don't fork it.
+- `js/picker-modal.js` — "file this block under which business?" Replaced a
+  `prompt()` that listed businesses as numbered lines; iOS truncates that
+  dialog, so past a handful of places most options were invisible. Searchable
+  list, arrow-keys/Enter, and a dashed "Start <name>" row when the typed text
+  matches nothing (which routes into the same speculative-business +
+  rollback-on-cancel path as `onCreateBlock`). It resolves `{ id }`,
+  `{ name }`, or `null`. It deliberately does *not* focus the search field on
+  open — on iOS that throws the keyboard over the list before you can see it.
 - `js/legend.js` — the category-filter bar. Shown above all three views
   (week/day/list) — it isn't nested inside one view's markup, so wiring a
   new view in later just means putting `#legend` above it too. Click to
