@@ -1,4 +1,4 @@
-import { DAY_SHORT, WEEK_ORDER, formatTime12, hoursForDay, isOpenAt, minutesUntilClose } from "./time.js";
+import { DAY_SHORT, WEEK_ORDER, formatTime12, hoursForDay, isOpenAt, minutesUntilClose, dateKey } from "./time.js";
 import { CATEGORIES } from "./schema.js";
 
 const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label]));
@@ -57,6 +57,7 @@ export function createListView(root, { getState, isVisible, onEdit }) {
           <span class="status-pill ${open ? "status-pill--open" : "status-pill--closed"}">${open ? "Open now" : "Closed"}</span>
         </div>
         ${biz.categories.length ? `<div class="biz-row__category">${biz.categories.map((k) => escapeHtml(CATEGORY_LABELS[k] || k)).join(" · ")}</div>` : ""}
+        ${renderTodayOverride(biz)}
         <div class="biz-row__hours">${renderHoursSummary(biz)}</div>
         ${biz.notes ? `<div class="biz-row__notes">${escapeHtml(biz.notes)}</div>` : ""}
       </div>
@@ -64,6 +65,20 @@ export function createListView(root, { getState, isVisible, onEdit }) {
     li.addEventListener("click", () => onEdit(biz.id));
     li.addEventListener("keydown", (e) => { if (e.key === "Enter") onEdit(biz.id); });
     return li;
+  }
+
+  // A dated override only applies to one day, so the weekly summary below
+  // can't show it — call it out separately when it's today's.
+  function renderTodayOverride(biz) {
+    const today = dateKey(new Date());
+    const e = (biz.exceptions || []).find((x) => x.date === today);
+    if (!e) return "";
+    const what = e.closed
+      ? "Closed today"
+      : e.start && e.end
+        ? `Today only: ${formatTime12(e.start)}–${formatTime12(e.end)}`
+        : "Override set for today (no hours — regular hours apply)";
+    return `<div class="biz-row__override">${escapeHtml(what)}${e.note ? ` · ${escapeHtml(e.note)}` : ""}</div>`;
   }
 
   function renderHoursSummary(biz) {

@@ -1,5 +1,5 @@
-import { DAY_NAMES, WEEK_ORDER } from "./time.js";
-import { newHourBlock, CATEGORIES } from "./schema.js";
+import { DAY_NAMES, WEEK_ORDER, dateKey } from "./time.js";
+import { newHourBlock, newException, CATEGORIES } from "./schema.js";
 
 export function createBizModal(root, { onSave, onDelete }) {
   root.innerHTML = `
@@ -51,6 +51,17 @@ export function createBizModal(root, { onSave, onDelete }) {
             </div>
             <div class="hours-editor__rows"></div>
           </div>
+
+          <div class="hours-editor">
+            <div class="hours-editor__head">
+              <span>Date overrides</span>
+              <button type="button" class="btn btn--ghost btn--small add-exception">+ Add override</button>
+            </div>
+            <p class="field-hint">Holiday hours or one-off closures. These win
+              over the weekly hours above for that date when working out
+              whether a place is open.</p>
+            <div class="exceptions-editor__rows"></div>
+          </div>
         </div>
         <footer class="modal__footer">
           <button type="button" class="btn btn--danger delete-biz">Delete</button>
@@ -74,6 +85,7 @@ export function createBizModal(root, { onSave, onDelete }) {
   const categorySelectEl = root.querySelector(".category-select");
   const categoryErrorEl = root.querySelector(".category-error");
   const rowsEl = root.querySelector(".hours-editor__rows");
+  const exceptionRowsEl = root.querySelector(".exceptions-editor__rows");
   const deleteBtn = root.querySelector(".delete-biz");
 
   let current = null; // working copy of business being edited
@@ -103,6 +115,10 @@ export function createBizModal(root, { onSave, onDelete }) {
     }
     renderHourRows();
   });
+  root.querySelector(".add-exception").addEventListener("click", () => {
+    current.exceptions.push(newException({ date: dateKey(new Date()) }));
+    renderExceptionRows();
+  });
   root.querySelector(".save-biz").addEventListener("click", () => {
     if (current.categories.length === 0) {
       categoryErrorEl.hidden = false;
@@ -115,6 +131,9 @@ export function createBizModal(root, { onSave, onDelete }) {
     current.phone = form.phone.value.trim();
     current.website = form.website.value.trim();
     current.notes = form.notes.value.trim();
+    // A dateless override can never match a day, so it would just sit in the
+    // data forever looking like a real rule. Drop those on save.
+    current.exceptions = current.exceptions.filter((e) => e.date);
     onSave(current, isNew);
     close();
   });
@@ -139,6 +158,7 @@ export function createBizModal(root, { onSave, onDelete }) {
     categoryErrorEl.hidden = true;
     renderCategorySelect();
     renderHourRows(focusHourId);
+    renderExceptionRows();
     backdrop.hidden = false;
     setTimeout(() => form.name.focus(), 0);
   }
@@ -166,6 +186,52 @@ export function createBizModal(root, { onSave, onDelete }) {
       });
       categorySelectEl.appendChild(chip);
     });
+  }
+
+  function renderExceptionRows() {
+    exceptionRowsEl.innerHTML = "";
+    current.exceptions
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .forEach((e) => exceptionRowsEl.appendChild(renderExceptionRow(e)));
+  }
+
+  function renderExceptionRow(e) {
+    const row = document.createElement("div");
+    row.className = "hour-row exception-row";
+    row.dataset.exceptionId = e.id;
+    row.innerHTML = `
+      <input type="date" name="date" value="${escapeAttr(e.date)}">
+      <label class="exception-row__closed">
+        <input type="checkbox" name="closed" ${e.closed ? "checked" : ""}>
+        <span>Closed</span>
+      </label>
+      <input type="time" name="start" value="${escapeAttr(e.start)}" ${e.closed ? "disabled" : ""}>
+      <span aria-hidden="true">–</span>
+      <input type="time" name="end" value="${escapeAttr(e.end)}" ${e.closed ? "disabled" : ""}>
+      <input type="text" name="note" placeholder="Note (optional)" value="${escapeAttr(e.note)}">
+      <button type="button" class="btn btn--icon remove-exception" aria-label="Remove override">&times;</button>
+    `;
+    const date = row.querySelector('[name="date"]');
+    const closed = row.querySelector('[name="closed"]');
+    const start = row.querySelector('[name="start"]');
+    const end = row.querySelector('[name="end"]');
+    const note = row.querySelector('[name="note"]');
+    date.addEventListener("change", () => { e.date = date.value; });
+    closed.addEventListener("change", () => {
+      e.closed = closed.checked;
+      // Times are meaningless while closed — disable rather than hide them so
+      // the row doesn't reflow under the user's finger.
+      start.disabled = end.disabled = e.closed;
+    });
+    start.addEventListener("change", () => { e.start = start.value; });
+    end.addEventListener("change", () => { e.end = end.value; });
+    note.addEventListener("input", () => { e.note = note.value; });
+    row.querySelector(".remove-exception").addEventListener("click", () => {
+      current.exceptions = current.exceptions.filter((x) => x.id !== e.id);
+      renderExceptionRows();
+    });
+    return row;
   }
 
   function renderHourRows(focusHourId) {

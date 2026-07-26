@@ -99,21 +99,88 @@ export function attachBlockDrag(el, bizId, block, onUpdateBlock) {
   let origEnd = 0;
   let bodyHeight = 0;
 
-  const onDown = (e) => {
-    const target = e.target;
-    mode = target.dataset.resize === "start" ? "resize-start"
-      : target.dataset.resize === "end" ? "resize-end"
-      : "move";
-    startY = pointY(e);
+  // Same hold gate as create-by-drag (see attachDayInteractions): a touch that
+  // lands on a block and then scrolls the page must not become a move. It used
+  // to — the block visibly slid under the finger, and if the browser stole the
+  // gesture our pointerup never arrived, so it sat at the wrong offset until
+  // the next render. Both the shift and the eventual snap-back were this.
+  let holdTimer = null;
+  let downX = 0;
+  let downY = 0;
+  let pendingMode = null;
+  let origTop = "";
+  let origHeight = "";
+
+  function beginDrag(clientY, pointerId) {
+    mode = pendingMode;
+    // renderBlock positions blocks with inline top/height, so a cancelled drag
+    // has to restore these exact strings — clearing them would drop the block
+    // to the top of the column instead.
+    origTop = el.style.top;
+    origHeight = el.style.height;
+    startY = clientY;
     origStart = toMinutes(block.start);
     origEnd = toMinutes(block.end);
     if (origEnd <= origStart) origEnd += 1440;
     bodyHeight = el.parentElement.getBoundingClientRect().height;
-    el.setPointerCapture?.(e.pointerId);
+    // Capture is a nice-to-have; it throws if the pointer is already gone
+    // (Safari does this on fast gestures), and losing it must not abort the
+    // drag setup that follows.
+    try { if (pointerId !== undefined) el.setPointerCapture?.(pointerId); } catch { /* no active pointer */ }
+    el.classList.add("is-dragging");
+    document.addEventListener("touchmove", blockScroll, { passive: false });
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+  }
+
+  const blockScroll = (e) => e.preventDefault();
+
+  function cancelHold() {
+    if (holdTimer !== null) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    el.classList.remove("is-holding");
+    window.removeEventListener("pointermove", onHoldMove);
+    window.removeEventListener("pointerup", cancelHold);
+    window.removeEventListener("pointercancel", cancelHold);
+  }
+
+  const onHoldMove = (e) => {
+    if (Math.abs(e.clientY - downY) > HOLD_SLOP || Math.abs(e.clientX - downX) > HOLD_SLOP) cancelHold();
+  };
+
+  const onDown = (e) => {
+    const target = e.target;
+    pendingMode = target.dataset.resize === "start" ? "resize-start"
+      : target.dataset.resize === "end" ? "resize-end"
+      : "move";
+
+    if (e.pointerType === "mouse") {
+      beginDrag(pointY(e), e.pointerId);
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    downX = e.clientX;
+    downY = e.clientY;
+    const y = pointY(e);
+    const pointerId = e.pointerId;
+    el.classList.add("is-holding");
+    window.addEventListener("pointermove", onHoldMove);
+    window.addEventListener("pointerup", cancelHold);
+    window.addEventListener("pointercancel", cancelHold);
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      cancelHold();
+      navigator.vibrate?.(15);
+      beginDrag(y, pointerId);
+    }, HOLD_MS);
+    // No preventDefault here: until the hold fires this might still be a
+    // scroll, and swallowing it would break panning over every block.
     e.stopPropagation();
-    e.preventDefault();
   };
 
   const onMove = (e) => {
@@ -134,9 +201,27 @@ export function attachBlockDrag(el, bizId, block, onUpdateBlock) {
     }
   };
 
-  const onUp = (e) => {
+  // If the browser takes the gesture away mid-drag (or the pointer is lost),
+  // drop the inline offsets so the element falls back to its rendered position
+  // instead of hanging at wherever the finger left it.
+  const onCancel = () => {
+    endDrag();
+    el.style.top = origTop;
+    el.style.height = origHeight;
+    el.dataset.dragged = "0";
+    mode = null;
+  };
+
+  function endDrag() {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    document.removeEventListener("touchmove", blockScroll);
+    el.classList.remove("is-dragging");
+  }
+
+  const onUp = (e) => {
+    endDrag();
     if (el.dataset.dragged !== "1") { mode = null; return; }
     const dy = pointY(e) - startY;
     const dMin = snap((dy / bodyHeight) * 1440);
@@ -195,6 +280,7 @@ export function attachDayInteractions(body, { onCreateBlock }) {
     document.addEventListener("touchmove", blockScroll, { passive: false });
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onGhostCancel);
   }
 
   function cancelHold() {
@@ -248,10 +334,22 @@ export function attachDayInteractions(body, { onCreateBlock }) {
     ghost.style.height = pct(hi - lo) + "%";
   };
 
+  // Browser stole the gesture: drop the ghost rather than leaving it painted.
+  const onGhostCancel = () => {
+    dragging = false;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onGhostCancel);
+    document.removeEventListener("touchmove", blockScroll);
+    ghost?.remove();
+    ghost = null;
+  };
+
   const onUp = (e) => {
     dragging = false;
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onGhostCancel);
     document.removeEventListener("touchmove", blockScroll);
     if (!ghost) return;
     const rect = body.getBoundingClientRect();

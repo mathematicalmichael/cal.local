@@ -83,6 +83,22 @@ export function newHourBlock(partial = {}) {
   };
 }
 
+// A dated override of the weekly hours — holiday closure, one-off early
+// close. `closed: true` wins outright; otherwise start/end replace that day's
+// regular blocks. An exception with neither falls through to `hours` (see
+// activeBlockAt in time.js), so "closed" is the useful default.
+export function newException(partial = {}) {
+  return {
+    id: newId(),
+    date: "",
+    closed: true,
+    start: "",
+    end: "",
+    note: "",
+    ...partial,
+  };
+}
+
 const PALETTE = [
   "#c65d3b", "#3b6e63", "#a3852f", "#5c6bc0",
   "#8a4f7d", "#2f7a4f", "#b2482e", "#456990",

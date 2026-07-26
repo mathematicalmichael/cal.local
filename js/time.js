@@ -26,8 +26,14 @@ export function formatTime12(hhmm) {
   return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
 }
 
+// Local calendar date, not UTC: exception dates are what the user typed into
+// a date picker, so matching them through toISOString() shifted the override
+// onto the wrong day for anyone west of UTC in the evening.
 export function dateKey(d) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 // Whichever hours block (dated exception or regular weekly hours) is

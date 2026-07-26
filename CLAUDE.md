@@ -155,7 +155,14 @@ overkill for a one-person tool — that's the whole ask here.
   as a scroll; once the hold is recognized, a non-passive `touchmove` handler
   suppresses native panning for the rest of the gesture (pointer capture
   alone doesn't). Mouse input starts immediately — there's no scroll gesture
-  to disambiguate from, and a hold would just feel broken.
+  to disambiguate from, and a hold would just feel broken. The same gate
+  applies to moving/resizing an existing block (`attachBlockDrag`): a touch
+  scroll that started on a block used to slide it under the finger, and if
+  the browser stole the gesture the missing `pointerup` left it parked at the
+  wrong offset until the next render. Both handlers also listen for
+  `pointercancel` and restore the block's original inline `top`/`height`
+  (which is how `renderBlock` positions it — clearing those would drop the
+  block to the top of the column).
 - `js/week-view.js` — the 7-day grid. A single CSS grid with an explicit
   header row (corner + day names) and body row (time gutter + day columns);
   the two-row structure is what keeps 12am from being clipped under the
@@ -189,6 +196,14 @@ overkill for a one-person tool — that's the whole ask here.
   day/start/end/label). "+ Add block" copies the *previous* row's
   start/end/label and advances to the next day of week, rather than
   repeating a generic default — faster for entering a run of similar days.
+  Below the weekly hours is the **date-overrides editor** for `exceptions`
+  (one row per date: date, a "Closed" checkbox, optional start/end, note).
+  `newException()` defaults to `closed: true` because an override with no
+  times and no closed flag falls straight through to the regular hours and
+  does nothing. Rows with an empty date are dropped on save for the same
+  reason. Note the grid views still don't *draw* exceptions — only
+  `isOpenAt`/`minutesUntilClose` and the list view's "Closed today" line
+  react to them.
 - `js/diff.js` — pure (DOM-free, like `time.js`) document comparison used by
   the import flow. Businesses are matched by `id` first, then by
   case-insensitive name, so a hand-rebuilt file reads as an edit rather than

@@ -669,6 +669,14 @@ button, input, select, textarea {
   gap: 0.15rem 1rem;
 }
 
+.biz-row__override {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.4rem;
+}
+
 .hours-summary-row {
   display: flex;
   justify-content: space-between;
@@ -837,6 +845,11 @@ button, input, select, textarea {
   align-items: center;
   gap: 0.4rem;
 }
+/* Six columns for the date/closed/time controls, with the note dropped onto
+   its own full-width line — squeezing it into a seventh column left it about
+   one character wide. */
+.exception-row { grid-template-columns: minmax(120px, 1.2fr) auto auto auto auto auto; }
+.exception-row input[name="note"] { grid-column: 1 / -1; }
 .hour-row select, .hour-row input[type="time"], .hour-row input[type="text"] {
   border: 1.5px solid var(--rule-strong);
   border-radius: 6px;
@@ -846,6 +859,42 @@ button, input, select, textarea {
   font-family: var(--font-mono);
   min-width: 0;
 }
+.hour-row input[type="date"] {
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  background: transparent;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  min-width: 0;
+}
+.hour-row input:disabled { opacity: 0.4; }
+
+.exception-row__closed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.remove-exception {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
 .remove-hour {
   border: none;
   background: none;
@@ -862,6 +911,11 @@ button, input, select, textarea {
   border-top: 2px solid var(--rule-strong);
 }
 .modal__footer-spacer { flex: 1; }
+
+/* A block being held or dragged lifts slightly, so it's obvious the gesture
+   was taken as "move this" and not as a scroll. */
+.hour-block.is-holding { outline: 2px solid var(--accent); }
+.hour-block.is-dragging { box-shadow: var(--shadow); z-index: 20 !important; }
 
 /* Touch: creating a block needs a hold (see HOLD_MS in grid-common.js), so
    give the pressed column a faint tint while the timer runs — otherwise the
@@ -991,6 +1045,8 @@ button, input, select, textarea {
   .week-grid { --hour-height: 46px; grid-template-columns: 2.6rem repeat(7, minmax(92px, 1fr)); }
   .hour-row { grid-template-columns: 1fr 1fr; row-gap: 0.35rem; }
   .hour-row select { grid-column: 1 / -1; }
+  .exception-row { grid-template-columns: 1fr 1fr; }
+  .exception-row input[type="date"], .exception-row input[name="note"] { grid-column: 1 / -1; }
   .hour-row .remove-hour { justify-self: end; }
   .field-row { flex-direction: column; }
 }
