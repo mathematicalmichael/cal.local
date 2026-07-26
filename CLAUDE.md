@@ -149,7 +149,13 @@ overkill for a one-person tool — that's the whole ask here.
   blocks get their own side-by-side column instead of stacking full-width —
   a wide block used to fully cover narrower ones underneath, making them
   unclickable. If you touch drag/resize math, fix it here once, not in both
-  view modules.
+  view modules. **Create-by-drag requires a ~400ms hold on touch** (`HOLD_MS`
+  / `HOLD_SLOP`): tap-and-scroll on a phone was constantly creating
+  accidental blocks. Movement past the slop before the timer fires cancels it
+  as a scroll; once the hold is recognized, a non-passive `touchmove` handler
+  suppresses native panning for the rest of the gesture (pointer capture
+  alone doesn't). Mouse input starts immediately — there's no scroll gesture
+  to disambiguate from, and a hold would just feel broken.
 - `js/week-view.js` — the 7-day grid. A single CSS grid with an explicit
   header row (corner + day names) and body row (time gutter + day columns);
   the two-row structure is what keeps 12am from being clipped under the
@@ -170,6 +176,9 @@ overkill for a one-person tool — that's the whole ask here.
   (week/day/list) — it isn't nested inside one view's markup, so wiring a
   new view in later just means putting `#legend` above it too. Click to
   toggle, double-click to isolate one category.
+  The **default view on a first visit is the list** (`app.js` still honors a
+  saved `cal.local.view`); `index.html` ships with the list panel visible so
+  there's no first-paint flash of the week grid.
 - `js/list-view.js` — search + "open now" + the same category filter as
   the grid views, pure client-side string matching over
   name/categories/notes/address.
