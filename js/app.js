@@ -1,5 +1,5 @@
 import { load, save, exportJson, importJson } from "./storage.js";
-import { newBusiness, newHourBlock } from "./schema.js";
+import { newBusiness, newHourBlock, normalize } from "./schema.js";
 import { createWeekView } from "./week-view.js";
 import { createDayView } from "./day-view.js";
 import { createListView } from "./list-view.js";
@@ -150,10 +150,12 @@ importInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     const imported = await importJson(file);
-    // Show what the file would actually change rather than a bare count —
-    // an import is destructive (it replaces the whole document).
-    if (await importModal.open(state, imported)) {
-      state = imported;
+    // The modal resolves with the document to adopt (a merge result, or the
+    // file itself in replace mode), or null if cancelled. normalize() again
+    // because a merge stitches two documents together.
+    const next = await importModal.open(state, imported);
+    if (next) {
+      state = normalize(next);
       persist();
     }
   } catch (err) {

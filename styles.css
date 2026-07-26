@@ -865,6 +865,51 @@ button, input, select, textarea {
 
 /* ---------- Import diff ---------- */
 
+.import-modes {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1.5px solid var(--rule);
+  flex-wrap: wrap;
+}
+.import-mode {
+  border: 1.5px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.import-mode.is-active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.import-bulk { margin-left: auto; display: flex; gap: 0.3rem; }
+.import-bulk[hidden] { display: none; }
+
+.diff-choice {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 999px;
+  overflow: hidden;
+  flex: none;
+}
+.diff-choice button {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+.diff-choice button.is-active { background: var(--ink); color: var(--paper); }
+/* Replace mode ignores the per-row choices entirely — show that. */
+.diff-body--replace .diff-choice { opacity: 0.35; pointer-events: none; }
+.diff-body--replace .diff-item.is-declined { opacity: 1; }
+.diff-item.is-declined { opacity: 0.45; }
+
 .diff-summary { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .diff-chip {
   font-family: var(--font-mono);
@@ -909,7 +954,7 @@ button, input, select, textarea {
 
 .diff-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .diff-name { font-weight: 600; }
-.diff-meta { margin-left: auto; font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); }
+.diff-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); }
 
 .diff-field {
   display: flex;

@@ -185,11 +185,18 @@ overkill for a one-person tool — that's the whole ask here.
   case-insensitive name, so a hand-rebuilt file reads as an edit rather than
   a remove+add. `hours`/`exceptions` are diffed as multisets of their
   human-readable form, not by id, for the same reason.
-- `js/import-modal.js` — the import confirmation modal (replaces the old
+- `js/import-modal.js` — the import review modal (replaces the old
   `confirm()` that only showed a business count). Reuses the
-  `.modal-backdrop`/`.modal` shell from `styles.css` and returns a promise
-  resolving true/false. Import still *replaces* the whole document — the
-  modal only explains what that would change; it isn't a merge tool.
+  `.modal-backdrop`/`.modal` shell from `styles.css` and resolves with the
+  document to adopt, or `null` if cancelled. Two modes: **Replace all**
+  (adopt the file wholesale, the old behavior) and **Merge**, where every
+  conflict is resolved individually via `diff.js`'s `applyMerge` /
+  `defaultChoices`. `"mine"`/`"theirs"` mean the same thing in every
+  section — the current app wins vs. the file wins — so add/remove/change
+  share one mental model; defaults are non-destructive (nothing of yours
+  disappears unless you say so, but new material comes in). A changed
+  business keeps its *current* id after a merge so anything already keyed
+  off it still resolves.
 - `js/app.js` — composition root: wires storage, the three views, the
   legend, and the modal together; owns the single in-memory `state` object,
   `isBizVisible()` (the two-layer visibility check), and the `persist()`

@@ -109,7 +109,7 @@ export function diffStates(current, incoming) {
   filterKeys.forEach((key) => {
     const a = (current.categoryFilters || {})[key] !== false;
     const b = (incoming.categoryFilters || {})[key] !== false;
-    if (a !== b) filters.push({ label: CATEGORY_LABELS[key] || key, before: a, after: b });
+    if (a !== b) filters.push({ key, label: CATEGORY_LABELS[key] || key, before: a, after: b });
   });
 
   const unchangedCount = pairs.length - changed.length;
@@ -121,5 +121,65 @@ export function diffStates(current, incoming) {
     filters,
     unchangedCount,
     isNoop: !added.length && !removed.length && !changed.length && !filters.length,
+  };
+}
+
+// Per-conflict resolution: "mine" always means the document currently in the
+// app wins, "theirs" the imported file — for every kind of conflict, so a
+// single mental model covers add/remove/change alike:
+//   added   → theirs = take the new business, mine = skip it
+//   removed → theirs = drop it, mine = keep it
+//   changed → theirs = the file's version, mine = leave mine alone
+export const MINE = "mine";
+export const THEIRS = "theirs";
+
+// Defaults chosen to be non-destructive: nothing of yours disappears unless
+// you say so, but new material in the file comes in.
+export function defaultChoices(diff) {
+  const choices = { businesses: {}, filters: THEIRS };
+  diff.added.forEach((b) => { choices.businesses[b.id] = THEIRS; });
+  diff.removed.forEach((b) => { choices.businesses[b.id] = MINE; });
+  diff.changed.forEach((c) => { choices.businesses[c.before.id] = THEIRS; });
+  return choices;
+}
+
+// Builds the merged document. Pure: it reads `current`/`incoming` and returns
+// fresh business objects, mutating neither. Business order follows the
+// current document, with accepted additions appended.
+export function applyMerge(current, incoming, diff, choices) {
+  const pick = (id, fallback) => choices.businesses[id] || fallback;
+  const changedById = new Map(diff.changed.map((c) => [c.before.id, c]));
+  const removedIds = new Set(diff.removed.map((b) => b.id));
+
+  const businesses = [];
+  (current.businesses || []).forEach((biz) => {
+    if (removedIds.has(biz.id)) {
+      if (pick(biz.id, MINE) === MINE) businesses.push(biz);
+      return;
+    }
+    const change = changedById.get(biz.id);
+    if (change && pick(biz.id, THEIRS) === THEIRS) {
+      // Keep the *current* id so anything already keyed off it (open modal,
+      // in-flight drag) still resolves after the merge.
+      businesses.push({ ...change.after, id: biz.id });
+      return;
+    }
+    businesses.push(biz);
+  });
+
+  (diff.added || []).forEach((biz) => {
+    if (pick(biz.id, THEIRS) === THEIRS) businesses.push(biz);
+  });
+
+  const categoryFilters = { ...(current.categoryFilters || {}) };
+  if (choices.filters === THEIRS) {
+    (diff.filters || []).forEach((f) => { categoryFilters[f.key] = f.after; });
+  }
+
+  return {
+    ...current,
+    schemaVersion: incoming.schemaVersion || current.schemaVersion,
+    businesses,
+    categoryFilters,
   };
 }
