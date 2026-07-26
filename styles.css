@@ -863,6 +863,13 @@ button, input, select, textarea {
 }
 .modal__footer-spacer { flex: 1; }
 
+/* Touch: creating a block needs a hold (see HOLD_MS in grid-common.js), so
+   give the pressed column a faint tint while the timer runs — otherwise the
+   400ms feels like the app ignored the tap. */
+.week-grid__day-body.is-holding {
+  background-color: var(--good-bg);
+}
+
 /* ---------- Import diff ---------- */
 
 .import-modes {

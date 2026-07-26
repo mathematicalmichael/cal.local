@@ -190,10 +190,10 @@ tabs.forEach((tab) => {
   tab.addEventListener("click", () => setView(tab.dataset.view));
 });
 
+// List is the default for a first visit — it's the view that answers "is this
+// place open right now" without any panning, and it reads fine on a phone.
 const savedView = localStorage.getItem(VIEW_KEY);
-if (savedView && VALID_VIEWS.includes(savedView) && savedView !== "week") {
-  setView(savedView);
-}
+setView(savedView && VALID_VIEWS.includes(savedView) ? savedView : "list");
 
 const THEME_KEY = "cal.local.theme";
 const themeToggle = document.querySelector("#theme-toggle");

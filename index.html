@@ -29,9 +29,9 @@
         </div>
       </div>
       <nav class="view-tabs" role="tablist" aria-label="View">
-        <button type="button" class="view-tab is-active" data-view="week" role="tab" aria-selected="true">Week</button>
+        <button type="button" class="view-tab" data-view="week" role="tab" aria-selected="false">Week</button>
         <button type="button" class="view-tab" data-view="day" role="tab" aria-selected="false">Day</button>
-        <button type="button" class="view-tab" data-view="list" role="tab" aria-selected="false">List</button>
+        <button type="button" class="view-tab is-active" data-view="list" role="tab" aria-selected="true">List</button>
       </nav>
       <div class="app-header__actions">
         <button type="button" id="add-business" class="btn btn--primary">+ Business</button>
@@ -50,11 +50,13 @@
     <main class="app-main">
       <div id="legend" aria-label="Category filter"></div>
       <div class="view-stack">
-        <section id="week-view" class="view-panel" aria-label="Week view">
+        <!-- List is the default view (js/app.js honors a saved choice); the
+             markup matches so there is no first-paint flash of the week grid. -->
+        <section id="week-view" class="view-panel" aria-label="Week view" hidden>
           <div id="week-grid-root" class="week-grid-root"></div>
         </section>
         <section id="day-view" class="view-panel" aria-label="Day view" hidden></section>
-        <section id="list-view" class="view-panel" aria-label="List view" hidden></section>
+        <section id="list-view" class="view-panel" aria-label="List view"></section>
       </div>
     </main>
 

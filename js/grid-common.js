@@ -160,25 +160,80 @@ export function attachBlockDrag(el, bizId, block, onUpdateBlock) {
   el.addEventListener("pointerdown", onDown);
 }
 
+// How long a touch has to sit still before it counts as "I want to create a
+// block here" rather than "I'm about to scroll", and how far it may drift in
+// the meantime. Mouse/trackpad input starts immediately — there's no scroll
+// gesture to disambiguate from, and a hold would just feel broken.
+const HOLD_MS = 400;
+const HOLD_SLOP = 10; // px
+
 export function attachDayInteractions(body, { onCreateBlock }) {
   let dragging = false;
   let startY = 0;
   let ghost = null;
   let height = 0;
+  let holdTimer = null;
+  let downClientY = 0;
+  let downClientX = 0;
 
-  body.addEventListener("pointerdown", (e) => {
-    if (e.target !== body) return;
+  // Non-passive touchmove is what actually stops the page from scrolling once
+  // a hold has been recognized — pointer capture alone doesn't reliably
+  // suppress native panning on touch.
+  const blockScroll = (e) => e.preventDefault();
+
+  function beginDrag(clientY) {
     dragging = true;
-    height = body.getBoundingClientRect().height;
-    startY = pointY(e) - body.getBoundingClientRect().top;
+    const rect = body.getBoundingClientRect();
+    height = rect.height;
+    startY = clientY - rect.top;
     ghost = document.createElement("div");
     ghost.className = "hour-block hour-block--ghost";
     const startMin = snap((startY / height) * 1440);
     ghost.style.top = pct(startMin) + "%";
     ghost.style.height = pct(SNAP) + "%";
     body.appendChild(ghost);
+    document.addEventListener("touchmove", blockScroll, { passive: false });
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+  }
+
+  function cancelHold() {
+    if (holdTimer !== null) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    body.classList.remove("is-holding");
+    window.removeEventListener("pointermove", onHoldMove);
+    window.removeEventListener("pointerup", cancelHold);
+    window.removeEventListener("pointercancel", cancelHold);
+  }
+
+  // Before the hold fires, any real movement means the user is scrolling.
+  const onHoldMove = (e) => {
+    if (Math.abs(e.clientY - downClientY) > HOLD_SLOP || Math.abs(e.clientX - downClientX) > HOLD_SLOP) {
+      cancelHold();
+    }
+  };
+
+  body.addEventListener("pointerdown", (e) => {
+    if (e.target !== body) return;
+    if (e.pointerType === "mouse") {
+      beginDrag(pointY(e));
+      return;
+    }
+    downClientY = e.clientY;
+    downClientX = e.clientX;
+    const y = e.clientY;
+    body.classList.add("is-holding");
+    window.addEventListener("pointermove", onHoldMove);
+    window.addEventListener("pointerup", cancelHold);
+    window.addEventListener("pointercancel", cancelHold);
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      cancelHold();
+      navigator.vibrate?.(15);
+      beginDrag(y);
+    }, HOLD_MS);
   });
 
   const onMove = (e) => {
@@ -197,6 +252,7 @@ export function attachDayInteractions(body, { onCreateBlock }) {
     dragging = false;
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
+    document.removeEventListener("touchmove", blockScroll);
     if (!ghost) return;
     const rect = body.getBoundingClientRect();
     const y = pointY(e) - rect.top;
