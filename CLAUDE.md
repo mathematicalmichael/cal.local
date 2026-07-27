@@ -200,9 +200,13 @@ overkill for a one-person tool — that's the whole ask here.
   required category multi-select chips (save is blocked with an inline
   error until at least one is picked — see the schema section above for
   why) and nested hours-block editor (add/remove rows, per-row
-  day/start/end/label). "+ Add block" copies the *previous* row's
-  start/end/label and advances to the next day of week, rather than
-  repeating a generic default — faster for entering a run of similar days.
+  day/start/end). "+ Add block" copies the *previous* row's start/end and
+  advances to the next day of week, rather than repeating a generic default
+  — faster for entering a run of similar days. The per-block `label` field
+  no longer has an input: nothing ever rendered it (not the grids, not the
+  list, not search), so it was write-only. The field itself stays in the
+  schema, in `newHourBlock()`, and in the import diff so old exports and
+  hand-edited files keep their labels — don't strip it.
   Below the weekly hours is the **date-overrides editor** for `exceptions`
   (one row per date: date, a "Closed" checkbox, optional start/end, note).
   `newException()` defaults to `closed: true` because an override with no

@@ -72,6 +72,9 @@ export function newBusiness(partial = {}) {
   };
 }
 
+// `label` is kept on the shape (and defaulted in normalize) even though the
+// modal no longer offers an input for it: older exports and hand-edited files
+// carry labels, and the import diff still prints them. Don't strip it.
 export function newHourBlock(partial = {}) {
   return {
     id: newId(),

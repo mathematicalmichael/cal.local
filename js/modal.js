@@ -257,17 +257,14 @@ export function createBizModal(root, { onSave, onDelete }) {
       <input type="time" name="start" value="${h.start}">
       <span aria-hidden="true">–</span>
       <input type="time" name="end" value="${h.end}">
-      <input type="text" name="label" placeholder="Label (optional)" value="${escapeAttr(h.label)}">
       <button type="button" class="btn btn--icon remove-hour" aria-label="Remove block">&times;</button>
     `;
     const dow = row.querySelector('[name="dayOfWeek"]');
     const start = row.querySelector('[name="start"]');
     const end = row.querySelector('[name="end"]');
-    const label = row.querySelector('[name="label"]');
     dow.addEventListener("change", () => { h.dayOfWeek = Number(dow.value); });
     start.addEventListener("change", () => { h.start = start.value; });
     end.addEventListener("change", () => { h.end = end.value; });
-    label.addEventListener("input", () => { h.label = label.value; });
     row.querySelector(".remove-hour").addEventListener("click", () => {
       current.hours = current.hours.filter((x) => x.id !== h.id);
       renderHourRows();

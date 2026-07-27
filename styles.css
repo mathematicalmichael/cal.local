@@ -841,7 +841,9 @@ button, input, select, textarea {
 
 .hour-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1.1fr) auto auto auto 1fr auto;
+  /* day · start · dash · end · remove — the per-block label input was removed
+     (nothing ever rendered it), so this is five columns, not six. */
+  grid-template-columns: minmax(90px, 1.1fr) 1fr auto 1fr auto;
   align-items: center;
   gap: 0.4rem;
 }
