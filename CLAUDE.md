@@ -34,7 +34,7 @@ Top-level document:
 
 ```js
 {
-  schemaVersion: 3,
+  schemaVersion: 4,
   businesses: [
     {
       id, name, address, phone, website,
@@ -42,7 +42,7 @@ Top-level document:
       notes,           // free text
       color,           // hex, used to tint week/day-view blocks
       hours: [
-        { id, dayOfWeek /* 0=Sun..6=Sat */, start /* "HH:MM" */, end, label }
+        { id, dayOfWeek /* 0=Sun..6=Sat */, start /* "HH:MM" */, end }
       ],
       exceptions: [
         { id, date /* "YYYY-MM-DD" */, closed, start, end, note }
@@ -203,10 +203,10 @@ overkill for a one-person tool — that's the whole ask here.
   day/start/end). "+ Add block" copies the *previous* row's start/end and
   advances to the next day of week, rather than repeating a generic default
   — faster for entering a run of similar days. The per-block `label` field
-  no longer has an input: nothing ever rendered it (not the grids, not the
-  list, not search), so it was write-only. The field itself stays in the
-  schema, in `newHourBlock()`, and in the import diff so old exports and
-  hand-edited files keep their labels — don't strip it.
+  is gone entirely (schema v4): nothing ever rendered it — not the grids,
+  not the list, not search — so it was write-only. `MIGRATIONS[3]` deletes
+  it, and `normalize()` strips it again on every load/import so a
+  hand-edited file can't reintroduce it into subsequent exports.
   Below the weekly hours is the **date-overrides editor** for `exceptions`
   (one row per date: date, a "Closed" checkbox, optional start/end, note).
   `newException()` defaults to `closed: true` because an override with no

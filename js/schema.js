@@ -5,7 +5,7 @@
 // it to the next version. `load()` in storage.js walks the chain from
 // whatever version is on disk up to CURRENT, so old exports always load.
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 // Fixed category vocabulary — a business can belong to several. Adding a
 // category here is additive (no version bump needed); renaming or removing
@@ -64,7 +64,7 @@ export function newBusiness(partial = {}) {
     website: "",
     notes: "",
     color: pickColor(),
-    hours: [], // { id, dayOfWeek, start:"HH:MM", end:"HH:MM", label }
+    hours: [], // { id, dayOfWeek, start:"HH:MM", end:"HH:MM" }
     exceptions: [], // { id, date:"YYYY-MM-DD", closed, start, end, note }
     createdAt: nowIso(),
     updatedAt: nowIso(),
@@ -72,16 +72,12 @@ export function newBusiness(partial = {}) {
   };
 }
 
-// `label` is kept on the shape (and defaulted in normalize) even though the
-// modal no longer offers an input for it: older exports and hand-edited files
-// carry labels, and the import diff still prints them. Don't strip it.
 export function newHourBlock(partial = {}) {
   return {
     id: newId(),
     dayOfWeek: 1,
     start: "09:00",
     end: "17:00",
-    label: "",
     ...partial,
   };
 }
@@ -139,6 +135,18 @@ export const MIGRATIONS = {
     categoryFilters: defaultCategoryFilters(),
     businesses: (doc.businesses || []).map((b) => ({ ...b, categories: guessCategories(b.category) })),
   }),
+  // v3 -> v4: dropped the per-hour-block `label`. Nothing ever rendered it,
+  // so it was write-only clutter. Unlike the v2/v3 fields, this one is
+  // actually deleted rather than left in place — it carried no information
+  // the UI could surface, and leaving it would keep it in every export.
+  3: (doc) => ({
+    ...doc,
+    schemaVersion: 4,
+    businesses: (doc.businesses || []).map((b) => ({
+      ...b,
+      hours: (b.hours || []).map(({ label, ...rest }) => rest),
+    })),
+  }),
 };
 
 function guessCategories(legacyCategory) {
@@ -178,7 +186,10 @@ export function normalize(doc) {
     // defending at every read site. Matches modal.js's "Untitled" fallback.
     name: typeof b.name === "string" && b.name.trim() ? b.name : "Untitled",
     categories: Array.isArray(b.categories) ? b.categories.filter((c) => CATEGORY_KEYS.has(c)) : [],
-    hours: (b.hours || []).map((h) => ({ ...newHourBlock(), ...h })),
+    // Strip `label` here too, not just in the migration: a hand-edited file or
+    // an older export re-imported later would otherwise put it back, and it
+    // would then ride along in every subsequent export.
+    hours: (b.hours || []).map(({ label, ...h }) => ({ ...newHourBlock(), ...h })),
     exceptions: (b.exceptions || []).map((e) => ({
       id: e.id || newId(),
       date: e.date || "",

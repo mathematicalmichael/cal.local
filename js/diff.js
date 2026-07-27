@@ -18,8 +18,7 @@ const SCALAR_FIELDS = [
 ];
 
 export function describeHour(h) {
-  const label = h.label ? ` (${h.label})` : "";
-  return `${DAY_SHORT[h.dayOfWeek] ?? "?"} ${formatTime12(h.start)}–${formatTime12(h.end)}${label}`;
+  return `${DAY_SHORT[h.dayOfWeek] ?? "?"} ${formatTime12(h.start)}–${formatTime12(h.end)}`;
 }
 
 export function describeException(e) {
